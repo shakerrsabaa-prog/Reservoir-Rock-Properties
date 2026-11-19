@@ -1,0 +1,149 @@
+<title>شبیه‌ساز بسته‌بندی دانه‌ها</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800&display=swap">
+<style>
+/* Layout: canvas of grains on one side, readouts and sliders on the other; stacks on phones.
+   Palette: deep navy ground, sand grains, pore-water blue, one gold accent. */
+:root{--bg:#eef3f8;--fg:#0e2a47;--muted:#4d6781;--panel:#ffffff;--line:#cfdbe8;--accent:#b8761c;--accent-fg:#ffffff;--pore:#5cb8f5;--cement:#e3d6bf;--ok:#1b7f4b;--bad:#b3392a;--font:'Vazirmatn','IRANSans',Tahoma,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#071a2d;--fg:#e6eef7;--muted:#9fb6cc;--panel:#0d2a46;--line:#1d4468;--accent:#f0c070;--accent-fg:#0e2a47;--pore:#2f86c0;--cement:#cbbd9f;--ok:#7ee0a0;--bad:#ff8a7a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#071a2d;--fg:#e6eef7;--muted:#9fb6cc;--panel:#0d2a46;--line:#1d4468;--accent:#f0c070;--accent-fg:#0e2a47;--pore:#2f86c0;--cement:#cbbd9f;--ok:#7ee0a0;--bad:#ff8a7a;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:16px;line-height:1.7;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-size:clamp(26px,4vw,38px);font-weight:800;line-height:1.3;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;max-width:62ch}
+.main{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:860px){.main{grid-template-columns:minmax(0,1fr)}}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px}
+canvas{display:block;width:100%;height:auto;border-radius:10px;aspect-ratio:3/2}
+.legend{display:flex;gap:18px;flex-wrap:wrap;padding:10px 4px 0;color:var(--muted);font-size:14px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:50%;margin-inline-end:6px;vertical-align:-2px}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.read{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+.big{font-size:clamp(44px,7vw,64px);font-weight:800;line-height:1.1;color:var(--accent);font-variant-numeric:tabular-nums}
+.lbl{color:var(--muted);font-size:14px}
+.bar{height:14px;border-radius:7px;background:var(--line);overflow:hidden;margin-top:10px}
+.bar b{display:block;height:100%;background:var(--pore);width:0;transition:width .25s}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin-top:12px;font-variant-numeric:tabular-nums}
+.kv span:nth-child(odd){color:var(--muted)}
+.ctl{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button,.pre button{font:inherit;font-size:15px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;flex-direction:column;gap:4px}
+.row label{display:flex;justify-content:space-between;gap:10px;font-weight:600}
+.row output{color:var(--accent);font-variant-numeric:tabular-nums;font-weight:800}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input:disabled{opacity:.4}
+.hint{color:var(--muted);font-size:14px;margin:0}
+.pre{display:flex;gap:8px;flex-wrap:wrap}
+.try{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+.try h2{font-size:18px;margin:0 0 8px}
+.try ol{margin:0;padding-inline-start:22px;display:flex;flex-direction:column;gap:6px}
+.note{color:var(--muted);font-size:13.5px;max-width:90ch}
+.ltr{direction:ltr;unicode-bidi:isolate}
+</style>
+<div class="wrap" dir="rtl" lang="fa">
+ <header>
+  <h1>شبیه‌ساز بسته‌بندی دانه‌ها</h1>
+  <p class="sub">چیدمان، اندازه و جورشدگی دانه‌ها و سیمان‌شدگی را تغییر دهید و ببینید تخلخل و تراوایی چه می‌شوند.</p>
+ </header>
+ <div class="main">
+  <section class="stage" aria-label="مقطع دوبعدی سنگ">
+   <canvas id="cv" width="900" height="600" role="img" aria-label="دانه‌های ماسه و فضای خالی بین آن‌ها"></canvas>
+   <div class="legend"><span><i style="background:#d9a867"></i>دانه</span><span><i style="background:var(--cement)"></i>سیمان</span><span><i style="background:var(--pore)"></i>منفذ (فضای خالی)</span></div>
+  </section>
+  <aside class="side">
+   <div class="read" aria-live="polite">
+    <div class="lbl">تخلخل برآوردی</div>
+    <div class="big" id="phi">—</div>
+    <div class="bar"><b id="phibar"></b></div>
+    <div class="kv">
+     <span>مرجع کتابچه برای این چیدمان</span><span id="ref">—</span>
+     <span>تراوایی (برآورد کوزنی–کارمن)</span><span id="perm" class="ltr">—</span>
+     <span>قطر دانه</span><span id="dd" class="ltr">—</span>
+    </div>
+   </div>
+   <div class="ctl">
+    <div class="row"><span class="lbl">چیدمان</span>
+     <div class="seg" id="pk" role="group" aria-label="چیدمان">
+      <button data-v="cubic" aria-pressed="true">مکعبی</button><button data-v="rhomb" aria-pressed="false">رمبوهدرال</button><button data-v="random" aria-pressed="false">تصادفی</button>
+     </div></div>
+    <div class="row"><label for="d">قطر دانه <output id="dO"></output></label><input id="d" type="range" min="80" max="400" step="10" value="200"></div>
+    <div class="row"><label for="s">بدجورشدگی <output id="sO"></output></label><input id="s" type="range" min="0" max="100" step="5" value="0"><p class="hint" id="sH">فقط در چیدمان تصادفی اثر دارد.</p></div>
+    <div class="row"><label for="c">سیمان‌شدگی <output id="cO"></output></label><input id="c" type="range" min="0" max="100" step="5" value="0"></div>
+    <div class="pre" role="group" aria-label="حالت‌های آماده"><button data-p="good">ماسه‌سنگ جورشده</button><button data-p="poor">جورشدگی ضعیف</button><button data-p="cem">سیمانی‌شده</button></div>
+   </div>
+  </aside>
+ </div>
+ <section class="try">
+  <h2>امتحان کنید</h2>
+  <ol>
+   <li>روی «مکعبی» قطر دانه را از ۸۰ تا ۴۰۰ میکرون ببرید. تخلخل تغییر نمی‌کند، ولی تراوایی چند برابر می‌شود.</li>
+   <li>از مکعبی به رمبوهدرال بروید. دانه‌ها فشرده‌تر می‌شوند و تخلخل پایین می‌آید.</li>
+   <li>چیدمان را «تصادفی» کنید و بدجورشدگی را زیاد کنید. دانه‌های ریز بین دانه‌های درشت می‌نشینند و تخلخل کم می‌شود.</li>
+   <li>سیمان‌شدگی را بالا ببرید. منافذ بسته می‌شوند و راه عبور سیال قطع می‌شود.</li>
+  </ol>
+ </section>
+ <p class="note">شکل بالا یک مقطع دوبعدی است. تخلخل نمایش‌داده‌شده از مقایسهٔ سطح منافذ با حالت پایه به دست می‌آید و در مقدار سه‌بُعدی مرجع کتابچه ضرب می‌شود (مکعبی ۴۷٫۶٪، رمبوهدرال ۲۶٫۰٪، تصادفی حدود ۳۸٪ به‌عنوان مقدار نمونه). تراوایی با رابطهٔ کوزنی–کارمن برای کره‌های ایده‌آل برآورد شده و برای سنگ واقعی بسیار بزرگ‌تر از مقدار آزمایشگاهی است. هدف، دیدن روند تغییرات است و نه محاسبهٔ دقیق.</p>
+</div>
+<script>
+(function(){
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+var off=document.createElement('canvas');off.width=W/2;off.height=H/2;var octx=off.getContext('2d',{willReadFrequently:true});
+var UM=2.5; // microns per pixel
+var st={pack:'cubic',d:200,s:0,c:0};
+var BASE3={cubic:47.6,rhomb:26.0,random:38.0};
+var $=function(i){return document.getElementById(i)};
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;var t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function regular(type,r){var a=[],sp=2*r,rows=type==='cubic'?sp:sp*0.8660254;
+ for(var j=0;j*rows<H+sp;j++){var off=(type==='rhomb'&&j%2)?r:0;for(var i=-1;i*sp<W+sp;i++){a.push([i*sp+off+r,j*rows+r,r])}}return a}
+function random(r0,s,seed){var R=rng(seed),cand=[],i;
+ var N=Math.min(7000,Math.round(W*H/(Math.PI*r0*r0)*(1+14*s)));
+ for(i=0;i<N;i++){var u=R();cand.push(r0*(1-0.8*s*Math.pow(u,0.5)))}
+ cand.sort(function(a,b){return b-a});
+ var cell=2*r0,gw=Math.ceil(W/cell),gh=Math.ceil(H/cell),g=new Array(gw*gh),out=[];for(i=0;i<g.length;i++)g[i]=[];
+ for(i=0;i<cand.length;i++){var r=cand[i];
+  for(var t=0;t<40;t++){var x=r+R()*(W-2*r),y=r+R()*(H-2*r),ok=true;
+   var cx=Math.floor(x/cell),cy=Math.floor(y/cell),span=Math.ceil((r+r0)/cell);
+   for(var gx=Math.max(0,cx-span);gx<=Math.min(gw-1,cx+span)&&ok;gx++)for(var gy=Math.max(0,cy-span);gy<=Math.min(gh-1,cy+span)&&ok;gy++){var L=g[gy*gw+gx];for(var k=0;k<L.length;k++){var o=L[k];if(Math.hypot(o[0]-x,o[1]-y)<o[2]+r+0.5){ok=false;break}}}
+   if(ok){var gp=[x,y,r];out.push(gp);g[cy*gw+cx].push(gp);break}}}
+ return out}
+function build(s,pack,rr){return pack==='random'?random(rr,s,7):regular(pack,rr)}
+function poreFrac(gr,c){octx.fillStyle='#fff';octx.fillRect(0,0,off.width,off.height);octx.fillStyle='#000';
+ for(var i=0;i<gr.length;i++){var g=gr[i];octx.beginPath();octx.arc(g[0]/2,g[1]/2,g[2]*(1+0.35*c)/2,0,6.2832);octx.fill()}
+ var d=octx.getImageData(0,0,off.width,off.height).data,n=0,w=0;for(var p=0;p<d.length;p+=4){n++;if(d[p]>127)w++}return w/n}
+var cache={};
+function baseline(pack,rr){var k=pack+rr;if(!(k in cache))cache[k]=poreFrac(build(0,pack,rr),0);return cache[k]}
+function fmt(x,n){return Number(x).toLocaleString('fa-IR',{minimumFractionDigits:n,maximumFractionDigits:n})}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+var tints=['#e9c98e','#ddb574','#f0d9ac','#cfa05f'];
+function draw(){
+ var rr=st.d/UM/2,gr=build(st.s/100,st.pack,rr),c=st.c/100;
+ ctx.fillStyle=css('--pore');ctx.fillRect(0,0,W,H);
+ if(c>0){ctx.fillStyle=css('--cement');for(var i=0;i<gr.length;i++){var g=gr[i];ctx.beginPath();ctx.arc(g[0],g[1],g[2]*(1+0.35*c),0,6.2832);ctx.fill()}}
+ ctx.lineWidth=1.5;ctx.strokeStyle='rgba(107,67,24,.55)';
+ for(i=0;i<gr.length;i++){g=gr[i];ctx.fillStyle=tints[i%4];ctx.beginPath();ctx.arc(g[0],g[1],g[2],0,6.2832);ctx.fill();ctx.stroke()}
+ var f=poreFrac(gr,c),b=baseline(st.pack,rr),ratio=Math.max(0,Math.min(1,f/b)),phi=BASE3[st.pack]*ratio;
+ $('phi').textContent=fmt(phi,1)+'٪';$('phibar').style.width=Math.min(100,phi/50*100)+'%';
+ $('ref').textContent=fmt(BASE3[st.pack],1)+'٪';
+ var p=phi/100,d=st.d,k=(p<=0.0005)?0:(d*d*p*p*p/(180*Math.pow(1-p,2)))*1013;
+ $('perm').textContent=(k<1?'≈ 0':k.toLocaleString('en-US',{maximumFractionDigits:0}))+' mD';
+ $('dd').textContent=d+' µm';
+ $('dO').textContent=fmt(d,0)+' میکرون';$('sO').textContent=fmt(st.s,0)+'٪';$('cO').textContent=fmt(st.c,0)+'٪';
+}
+function sync(){var reg=st.pack!=='random';$('s').disabled=reg;$('sH').textContent=reg?'در چیدمان منظم همهٔ دانه‌ها هم‌اندازه‌اند؛ برای دیدن اثر، چیدمان را «تصادفی» کنید.':'دانه‌های ریزتر بین دانه‌های درشت می‌نشینند.';
+ [].forEach.call(document.querySelectorAll('#pk button'),function(b){b.setAttribute('aria-pressed',b.dataset.v===st.pack)});
+ $('d').value=st.d;$('s').value=st.s;$('c').value=st.c;draw()}
+[].forEach.call(document.querySelectorAll('#pk button'),function(b){b.onclick=function(){st.pack=b.dataset.v;if(st.pack!=='random')st.s=0;sync()}});
+$('d').oninput=function(e){st.d=+e.target.value;draw()};
+$('s').oninput=function(e){st.s=+e.target.value;draw()};
+$('c').oninput=function(e){st.c=+e.target.value;draw()};
+var P={good:{pack:'random',d:200,s:0,c:0},poor:{pack:'random',d:200,s:80,c:0},cem:{pack:'cubic',d:200,s:0,c:60}};
+[].forEach.call(document.querySelectorAll('.pre button'),function(b){b.onclick=function(){st=Object.assign({},P[b.dataset.p]);sync()}});
+if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
+new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+sync();
+})();
+</script>
